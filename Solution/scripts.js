@@ -104,4 +104,161 @@ db.movies.aggregate([
         }
      }
 ])
- 
+
+//15
+
+db.movies.aggregate([
+    {
+        $match:{
+            year : {$ne:null}
+        }
+    },
+    {
+        $group: {
+            _id: "$year",
+            moviesNumber: { $sum: 1 }
+        }
+    },
+    {
+        $sort: {"moviesNumber":1}
+    },
+      {
+        $group: {
+            _id :null,
+           minNumberMovies: { $first: "$moviesNumber" }
+        }
+    },
+    {
+        $project: {
+            minNumberMovies: 1
+        }
+    },
+     {
+        $lookup: {
+            from: "movies",
+            let: {minNumberMovies: "$minNumberMovies" },
+            pipeline: [
+                {
+                    $group: {
+                        _id: "$year",
+                        moviesNumber: { $sum: 1 }
+                    }
+                },
+                {
+                    $match: {
+                        $expr: { $eq: ['$moviesNumber',  "$$minNumberMovies" ] },
+                    }
+                },
+                {
+                    $project: {
+                        moviesNumber : false
+                    }
+                }
+            ],
+            as: "years"
+        }
+     }
+])
+
+//16
+db.movies.aggregate(
+     { $unwind : "$cast" },
+     {
+        $project: {_id:0}
+     },
+     {
+        $out: "actors"  
+     }
+    )
+
+db.actors.countDocuments()
+    
+//17
+db.actors.aggregate(
+    { $match : {"cast": {$ne: null}}},
+    { $unwind: "$cast"},
+    { $group: { "_id": "$cast",
+                "performingsNumber": {$sum: 1}
+    }},
+    {
+        $sort: {"performingsNumber": -1}
+    },
+    {
+        $limit: 5
+     }
+    )
+
+    
+//18
+db.actors.aggregate(
+     { $match :  {"cast": {$ne: null}}},
+     {
+         $group: { 
+             _id: {"title": "$title", "year": "$year"},
+             actorsNumber: {$sum : 1}
+         }
+     },
+    {
+        $sort: {"actorsNumber": -1}
+    },
+    {
+        $limit: 5
+     }
+    )
+    
+//19
+db.actors.aggregate(
+    { $match :  
+        {$and: [
+                {"cast": {$ne: null}}, 
+                {"cast": {$ne: "and"}}
+            ]
+            
+        }
+    },
+    { 
+        $group: { _id: "$cast",
+                startCareer:{$min: "$year"},
+                endCareer: {$max: "$year"}
+                
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            actorName: "$_id"
+            startCareer: "$startCareer",
+            endCareer: "$endCareer",
+            yearsOfWork:  {$subtract: ["$endCareer", "$startCareer"] }
+        }
+    },
+    { $sort:{"yearsOfWork" : -1} },
+    { $limit: 5 }
+    }
+    )
+    
+//20
+db.movies.aggregate(
+     { $unwind : "$genres" },
+     {
+        $project: {_id:0}
+     },
+     {
+        $out: "genres"  
+     }
+    )
+
+db.genres.countDocuments()
+
+//21
+
+db.genres.aggregate(
+    {
+    $group: { 
+        _id: ["$genres", "$year"]
+        moviesNumber : {$sum:1}
+        }
+    },
+    {$sort:{"moviesNumber":-1 }},
+    {$limit:5}
+    )
