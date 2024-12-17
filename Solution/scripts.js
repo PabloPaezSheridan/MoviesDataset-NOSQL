@@ -262,3 +262,61 @@ db.genres.aggregate(
     {$sort:{"moviesNumber":-1 }},
     {$limit:5}
     )
+
+//22
+
+
+
+db.genres.aggregate
+(
+    {
+        $match :  
+        {$and: [
+                {"cast": {$ne: null}}, 
+                {"cast": {$ne: "and"}},
+                {"genres": {$ne: null}}
+            ]
+            
+        }
+    }
+    {
+        $unwind: "$cast"
+    }
+    {
+        $group: { 
+            _id: "$cast",
+            genres: {$addToSet: "$genres"}
+        }
+    }
+    {
+        $project: {
+            genres: "$genres"
+            genresCount: {$size: "$genres" }
+        }
+    }
+    {$sort: {"genresCount": -1}}
+    {$limit: 5}
+)
+
+// 23
+db.genres.aggregate
+(
+    {
+        $match :  {"genres": {$ne: null}}
+       
+    }
+    {
+        $group: { 
+            _id: {title:"$title", year:"$year"},
+            genres: {$addToSet: "$genres"}
+        }
+    }
+     {
+        $project: {
+            genres: "$genres"
+            genresCount: {$size: "$genres" }
+        }
+    }
+    {$sort: {"genresCount": -1}}
+    {$limit: 5}
+    )
