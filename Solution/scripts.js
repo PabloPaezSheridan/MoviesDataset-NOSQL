@@ -320,3 +320,106 @@ db.genres.aggregate
     {$sort: {"genresCount": -1}}
     {$limit: 5}
     )
+
+//24
+
+db.movies.aggregate(
+   {
+        $match :  
+        {$and: [
+                {"cast": {$ne: null}}, 
+                {"cast": {$ne: "and"}},
+                {"genres": {$ne: null}},
+                { "year": {$ne: null}}
+            ]
+            
+        }
+    }
+    { $group: { _id: "$year",
+                averageCastNumber: {$avg:{$cond: [{ $isArray: "$cast" }, {$size: "$cast"},1 ]}
+            }
+    }
+    {
+        $project: {
+          _id: 0,
+          year: "$_id"
+          averageCastNumber: { $toDouble: "$averageCastNumber" }
+        }
+    }
+    {
+        $sort: {averageCastNumber:-1}
+    }
+    )
+    
+//25
+
+db.movies.aggregate(
+     {
+        $match :  
+        {$and: [
+                {"cast": {$ne: null}}, 
+                {"cast": {$ne: "and"}},
+                {"genres": {$ne: null}},
+                { "year": {$ne: null}}
+            ]
+            
+        }
+    }
+    { $unwind: "$genres"}
+    { $group: { _id: "$genres",
+                averageCastNumber: {$avg:{$cond: [{ $isArray: "$cast" }, {$size: "$cast"},1 ]}
+            }
+    }
+    {
+        $project: {
+            _id :0,
+            genre: "$_id"
+            averageCastNumber: { $toInt:"$averageCastNumber" }
+        }
+    }
+    { 
+        $sort: {averageCastNumber:-1}
+    }
+    )
+    
+//26
+
+db.movies.aggregate(
+     {
+        $match :  
+        {$and: [
+                {"cast": {$ne: null}}, 
+                {"cast": {$ne: "and"}},
+                {"genres": {$ne: null}},
+                { "year": {$ne: null}}
+            ]
+            
+        }
+    }
+    { $unwind: "$genres"}
+    { $group: { _id: [{genres:"$genres"}, {year: "$year"}],
+                averageCastNumber: {$avg:{$cond: [{ $isArray: "$cast" }, {$size: "$cast"},1 ]}
+            }
+    }
+    {
+        $project: {
+            _id: 0,
+            genre: { $arrayElemAt: ["$_id", 0] },
+            year: { $arrayElemAt: ["$_id", 1] },
+            averageCastNumber: { $toInt:"$averageCastNumber" }
+            }
+            
+    }
+    {
+        $project: {
+            genre: "$genre.genres",
+            year: "$year.year",
+            averageCastNumber: 1
+            }
+            
+    }
+    {
+        $sort: {"genre": -1,"year":-1}
+    }
+    )
+    
